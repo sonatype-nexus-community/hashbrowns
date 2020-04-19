@@ -19,6 +19,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/sonatype-nexus-community/hashbrowns/parse"
 )
 
 // Config is basic config for hashbrowns
@@ -43,11 +45,19 @@ func main() {
 			os.Exit(1)
 		}
 		doParseSha1List(&config)
+	} else {
+		_, _ = parseCommandLineArgs(os.Args)
+		flag.Usage()
+
+		os.Exit(1)
 	}
 }
 
 func doParseSha1List(config *Config) {
-
+	if _, err := os.Stat(config.Path); os.IsNotExist(err) {
+		panic(err)
+	}
+	parse.ParseSha1File(config.Path)
 }
 
 func parseCommandLineArgs(args []string) (config Config, err error) {
@@ -55,6 +65,7 @@ func parseCommandLineArgs(args []string) (config Config, err error) {
 	iqCommand.BoolVar(&config.Info, "v", false, "Set log level to Info")
 	iqCommand.BoolVar(&config.Debug, "vv", false, "Set log level to Debug")
 	iqCommand.BoolVar(&config.Trace, "vvv", false, "Set log level to Trace")
+	iqCommand.StringVar(&config.Path, "path", "", "Path to file with sha1s")
 	iqCommand.StringVar(&config.User, "user", "admin", "Specify Nexus IQ username for request")
 	iqCommand.StringVar(&config.Token, "token", "admin123", "Specify Nexus IQ token/password for request")
 	iqCommand.StringVar(&config.Server, "server-url", "http://localhost:8070", "Specify Nexus IQ Server URL/port")
@@ -68,8 +79,8 @@ func parseCommandLineArgs(args []string) (config Config, err error) {
 
 	Options:
 	`)
+		iqCommand.PrintDefaults()
 	}
-	iqCommand.PrintDefaults()
 
 	err = iqCommand.Parse(args)
 	if err != nil {
