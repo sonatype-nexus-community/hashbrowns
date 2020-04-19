@@ -16,26 +16,16 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 
+	"github.com/sonatype-nexus-community/hashbrowns/iq"
 	"github.com/sonatype-nexus-community/hashbrowns/parse"
+	"github.com/sonatype-nexus-community/hashbrowns/types"
+	"github.com/sonatype-nexus-community/nancy/cyclonedx"
 )
-
-// Config is basic config for hashbrowns
-type Config struct {
-	Info        bool
-	Debug       bool
-	Trace       bool
-	Path        string
-	User        string
-	Token       string
-	Server      string
-	Application string
-	Stage       string
-	MaxRetries  int
-}
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "fry" {
@@ -53,14 +43,36 @@ func main() {
 	}
 }
 
-func doParseSha1List(config *Config) {
+func doParseSha1List(config *types.Config) {
 	if _, err := os.Stat(config.Path); os.IsNotExist(err) {
 		panic(err)
 	}
-	parse.ParseSha1File(config.Path)
+	sha1s, err := parse.ParseSha1File(config.Path)
+	if err != nil {
+		panic(err)
+	}
+
+	sbom := cyclonedx.SBOMFromSHA1(sha1s)
+
+	res, err := iq.AuditPackages(sbom, config)
+
+	fmt.Println()
+	if res.IsError {
+		panic(errors.New(res.ErrorMessage))
+	}
+
+	if res.PolicyAction != "Failure" {
+		fmt.Println("Wonderbar! No policy violations reported for this audit!")
+		fmt.Println("Report URL: ", res.ReportHTMLURL)
+		os.Exit(0)
+	} else {
+		fmt.Println("Hi, Nancy here, you have some policy violations to clean up!")
+		fmt.Println("Report URL: ", res.ReportHTMLURL)
+		os.Exit(1)
+	}
 }
 
-func parseCommandLineArgs(args []string) (config Config, err error) {
+func parseCommandLineArgs(args []string) (config types.Config, err error) {
 	iqCommand := flag.NewFlagSet("fry", flag.ExitOnError)
 	iqCommand.BoolVar(&config.Info, "v", false, "Set log level to Info")
 	iqCommand.BoolVar(&config.Debug, "vv", false, "Set log level to Debug")
