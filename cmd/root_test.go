@@ -69,7 +69,8 @@ func TestRootCommandNoArgs(t *testing.T) {
 }
 
 func TestRootCommandLogVerbosity(t *testing.T) {
-	validateConfigLogging(t, "", types.Config{Info: true}, "--v")
-	validateConfigLogging(t, "", types.Config{Debug: true}, "--vv")
-	validateConfigLogging(t, "", types.Config{Trace: true}, "--vvv")
+	validateConfigLogging(t, "", types.Config{}, "")
+	validateConfigLogging(t, "", types.Config{LogLevel: 1}, "-v")
+	validateConfigLogging(t, "", types.Config{LogLevel: 2}, "-vv")
+	validateConfigLogging(t, "", types.Config{LogLevel: 3}, "-vvv")
 }

@@ -60,9 +60,7 @@ func init() {
 
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hashbrowns.yaml)")
 
-	rootCmd.PersistentFlags().BoolVar(&config.Info, "v", false, "Set log level to Info")
-	rootCmd.PersistentFlags().BoolVar(&config.Debug, "vv", false, "Set log level to Debug")
-	rootCmd.PersistentFlags().BoolVar(&config.Trace, "vvv", false, "Set log level to Trace")
+	rootCmd.PersistentFlags().CountVarP(&config.LogLevel, "", "v", "Set log level, higher is more verbose")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
