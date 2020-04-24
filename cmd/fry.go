@@ -37,12 +37,6 @@ Could also include some description of why you would want to do whatever this th
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		fmt.Println("fry called")
 
-		err = populateConfigFry(cmd, &config)
-		if err != nil {
-			cmd.Usage()
-			return
-		}
-
 		var exitCode int
 		if exitCode, err = doParseSha1List(&config); err != nil {
 			return
@@ -61,42 +55,17 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	fryCmd.PersistentFlags().String("path", "", "Path to file with sha1s")
-	fryCmd.PersistentFlags().String("user", "admin", "Specify Nexus IQ username for request")
-	fryCmd.PersistentFlags().String("token", "admin123", "Specify Nexus IQ token/password for request")
-	fryCmd.PersistentFlags().String("server-url", "http://localhost:8070", "Specify Nexus IQ Server URL")
-	fryCmd.PersistentFlags().String("application", "", "Specify application ID for request")
-	fryCmd.PersistentFlags().String("stage", "develop", "Specify stage for application")
-	fryCmd.PersistentFlags().Int("max-retries", 300, "Specify maximum number of tries to poll Nexus IQ Server")
+	fryCmd.PersistentFlags().StringVar(&config.Path, "path", "", "Path to file with sha1s")
+	fryCmd.PersistentFlags().StringVar(&config.User, "user", "admin", "Specify Nexus IQ username for request")
+	fryCmd.PersistentFlags().StringVar(&config.Token, "token", "admin123", "Specify Nexus IQ token/password for request")
+	fryCmd.PersistentFlags().StringVar(&config.Server, "server-url", "http://localhost:8070", "Specify Nexus IQ Server URL")
+	fryCmd.PersistentFlags().StringVar(&config.Application, "application", "", "Specify application ID for request")
+	fryCmd.PersistentFlags().StringVar(&config.Stage, "stage", "develop", "Specify stage for application")
+	fryCmd.PersistentFlags().IntVar(&config.MaxRetries, "max-retries", 300, "Specify maximum number of tries to poll Nexus IQ Server")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// fryCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func populateConfigFry(cmd *cobra.Command, config *types.Config) (err error) {
-	if config.Path, err = cmd.Flags().GetString("path"); err != nil {
-		return
-	}
-	if config.User, err = cmd.Flags().GetString("user"); err != nil {
-		return
-	}
-	if config.Token, err = cmd.Flags().GetString("token"); err != nil {
-		return
-	}
-	if config.Server, err = cmd.Flags().GetString("server-url"); err != nil {
-		return
-	}
-	if config.Application, err = cmd.Flags().GetString("application"); err != nil {
-		return
-	}
-	if config.Stage, err = cmd.Flags().GetString("stage"); err != nil {
-		return
-	}
-	if config.MaxRetries, err = cmd.Flags().GetInt("max-retries"); err != nil {
-		return
-	}
-	return
 }
 
 func doParseSha1List(config *types.Config) (exitCode int, err error) {

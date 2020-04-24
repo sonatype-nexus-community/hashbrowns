@@ -8,9 +8,6 @@ import (
 )
 
 func validateConfigFryError(t *testing.T, expectedErrorMsgSnippet string, expectedConfig types.Config, args ...string) {
-	// setup default global config
-	config = types.Config{}
-
 	_, err := executeCommand(rootCmd, args...)
 
 	if expectedErrorMsgSnippet != "" {
@@ -21,9 +18,6 @@ func validateConfigFryError(t *testing.T, expectedErrorMsgSnippet string, expect
 	}
 
 	assert.Equal(t, expectedConfig, config)
-
-	// reset default global config
-	config = types.Config{}
 }
 
 func TestFryCommandConfigDefaultsIncomplete(t *testing.T) {

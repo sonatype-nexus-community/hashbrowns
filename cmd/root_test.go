@@ -44,15 +44,16 @@ func validateConfigLogging(t *testing.T, expectedOutput string, expectedConfig t
 	testArgs = append(testArgs, args...)
 
 	// setup default global config
+	origConfig := config
+	defer func() {
+		config = origConfig
+	}()
 	config = types.Config{}
 
 	output, err := executeCommand(rootCmd, testArgs...)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedOutput, output)
 	assert.Equal(t, expectedConfig, config)
-
-	// reset default global config
-	config = types.Config{}
 }
 
 func TestRootCommandUnknownCommand(t *testing.T) {
@@ -69,7 +70,6 @@ func TestRootCommandNoArgs(t *testing.T) {
 
 func TestRootCommandLogVerbosity(t *testing.T) {
 	validateConfigLogging(t, "", types.Config{Info: true}, "--v")
-	// kind of interesting how this pattern of adding the same letters is "additive", and enables the prior levels too
-	validateConfigLogging(t, "", types.Config{Info: true, Debug: true}, "--vv")
-	validateConfigLogging(t, "", types.Config{Info: true, Debug: true, Trace: true}, "--vvv")
+	validateConfigLogging(t, "", types.Config{Debug: true}, "--vv")
+	validateConfigLogging(t, "", types.Config{Trace: true}, "--vvv")
 }

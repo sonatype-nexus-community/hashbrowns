@@ -40,22 +40,6 @@ Also give an example of why you'd want to do what this thing does, and how to do
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
 
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return populateConfig(cmd, &config)
-	},
-}
-
-func populateConfig(cmd *cobra.Command, config *types.Config) (err error) {
-	if config.Info, err = cmd.Flags().GetBool("v"); err != nil {
-		return
-	}
-	if config.Debug, err = cmd.Flags().GetBool("vv"); err != nil {
-		return
-	}
-	if config.Trace, err = cmd.Flags().GetBool("vvv"); err != nil {
-		return
-	}
-	return
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -76,9 +60,9 @@ func init() {
 
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hashbrowns.yaml)")
 
-	rootCmd.PersistentFlags().Bool("v", false, "Set log level to Info")
-	rootCmd.PersistentFlags().Bool("vv", false, "Set log level to Debug")
-	rootCmd.PersistentFlags().Bool("vvv", false, "Set log level to Trace")
+	rootCmd.PersistentFlags().BoolVar(&config.Info, "v", false, "Set log level to Info")
+	rootCmd.PersistentFlags().BoolVar(&config.Debug, "vv", false, "Set log level to Debug")
+	rootCmd.PersistentFlags().BoolVar(&config.Trace, "vvv", false, "Set log level to Trace")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
