@@ -51,8 +51,6 @@ Could also include some description of why you would want to do whatever this th
 func init() {
 	rootCmd.AddCommand(fryCmd)
 
-	// Here you will define your flags and configuration settings.
-
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	fryCmd.PersistentFlags().StringVar(&config.Path, "path", "", "Path to file with sha1s")
@@ -62,10 +60,6 @@ func init() {
 	fryCmd.PersistentFlags().StringVar(&config.Application, "application", "", "Specify application ID for request")
 	fryCmd.PersistentFlags().StringVar(&config.Stage, "stage", "develop", "Specify stage for application")
 	fryCmd.PersistentFlags().IntVar(&config.MaxRetries, "max-retries", 300, "Specify maximum number of tries to poll Nexus IQ Server")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// fryCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func doParseSha1List(config *types.Config) (exitCode int, err error) {
