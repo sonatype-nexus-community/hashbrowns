@@ -2,9 +2,7 @@ package types
 
 // Config is basic config for hashbrowns
 type Config struct {
-	Info        bool
-	Debug       bool
-	Trace       bool
+	LogLevel    int
 	Path        string
 	User        string
 	Token       string
