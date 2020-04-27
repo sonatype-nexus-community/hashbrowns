@@ -1,12 +1,28 @@
+//
+// Copyright © 2020-present Sonatype Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 package cmd
 
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/sonatype-nexus-community/hashbrowns/iq"
 	"github.com/sonatype-nexus-community/hashbrowns/parse"
 	"github.com/sonatype-nexus-community/hashbrowns/types"
-	"os"
 
 	"github.com/sonatype-nexus-community/nancy/cyclonedx"
 	"github.com/spf13/cobra"
@@ -15,13 +31,11 @@ import (
 // fryCmd represents the fry command
 var fryCmd = &cobra.Command{
 	Use:   "fry",
-	Short: "Cook up some hashes",
-	Long: `Explain how we fry up some hashes, in great detail.
+	Short: "Submit list of sha1s to Nexus IQ Server",
+	Long: `Provided a path to a file with sha1's and locations, this command will submit them to Nexus IQ Server.
 
-Could also include some description of why you would want to do whatever this thing does.`,
+This can be used to audit generic environments for matches to known hashes that do not meet your org's policy.`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		fmt.Println("fry called")
-
 		var exitCode int
 		if exitCode, err = doParseSha1List(&config); err != nil {
 			return
@@ -36,8 +50,6 @@ Could also include some description of why you would want to do whatever this th
 func init() {
 	rootCmd.AddCommand(fryCmd)
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
 	fryCmd.PersistentFlags().StringVar(&config.Path, "path", "", "Path to file with sha1s")
 	fryCmd.PersistentFlags().StringVar(&config.User, "user", "admin", "Specify Nexus IQ username for request")
 	fryCmd.PersistentFlags().StringVar(&config.Token, "token", "admin123", "Specify Nexus IQ token/password for request")
@@ -70,7 +82,7 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
 		return
 	} else {
-		fmt.Println("Hi, Nancy here, you have some policy violations to clean up!")
+		fmt.Println("Hi, Hashbrowns here, you have some policy violations to clean up!")
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
 		return 1, nil
 	}
