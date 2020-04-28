@@ -182,6 +182,9 @@ func submitToThirdPartyAPI(sbom string, internalID string) (string, error) {
 
 		var response thirdPartyAPIResult
 		err = json.Unmarshal(bodyBytes, &response)
+		if err != nil {
+			return "", err
+		}
 		return response.StatusURL, nil
 	}
 
@@ -217,6 +220,9 @@ func pollIQServer(statusURL string, finished chan bool, maxRetries int) {
 
 		var response types.StatusURLResult
 		err = json.Unmarshal(bodyBytes, &response)
+		if err != nil {
+			panic(err)
+		}
 
 		statusURLResp = response
 		if response.IsError {
