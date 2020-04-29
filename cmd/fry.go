@@ -28,6 +28,7 @@ import (
 
 	"github.com/sonatype-nexus-community/nancy/cyclonedx"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var log *logrus.Logger
@@ -40,7 +41,6 @@ var fryCmd = &cobra.Command{
 
 This can be used to audit generic environments for matches to known hashes that do not meet your org's policy.`,
 	SilenceErrors: true,
-	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -53,6 +53,10 @@ This can be used to audit generic environments for matches to known hashes that 
 				logger.PrintErrorAndLogLocation(err)
 			}
 		}()
+
+		fflags := cmd.Flags()
+
+		checkRequiredFlags(fflags)
 
 		log = logger.GetLogger("", config.LogLevel)
 
@@ -73,13 +77,24 @@ This can be used to audit generic environments for matches to known hashes that 
 func init() {
 	rootCmd.AddCommand(fryCmd)
 
-	fryCmd.PersistentFlags().StringVar(&config.Path, "path", "", "Path to file with sha1s")
-	fryCmd.PersistentFlags().StringVar(&config.User, "user", "admin", "Specify Nexus IQ username for request")
-	fryCmd.PersistentFlags().StringVar(&config.Token, "token", "admin123", "Specify Nexus IQ token/password for request")
-	fryCmd.PersistentFlags().StringVar(&config.Server, "server-url", "http://localhost:8070", "Specify Nexus IQ Server URL")
-	fryCmd.PersistentFlags().StringVar(&config.Application, "application", "", "Specify application ID for request")
-	fryCmd.PersistentFlags().StringVar(&config.Stage, "stage", "develop", "Specify stage for application")
-	fryCmd.PersistentFlags().IntVar(&config.MaxRetries, "max-retries", 300, "Specify maximum number of tries to poll Nexus IQ Server")
+	pf := fryCmd.PersistentFlags()
+
+	pf.StringVar(&config.Path, "path", "", "Path to file with sha1s (required)")
+	pf.StringVar(&config.User, "user", "admin", "Specify Nexus IQ username for request")
+	pf.StringVar(&config.Token, "token", "admin123", "Specify Nexus IQ token/password for request")
+	pf.StringVar(&config.Server, "server-url", "http://localhost:8070", "Specify Nexus IQ Server URL")
+	pf.StringVar(&config.Application, "application", "", "Specify application ID for request (required)")
+	pf.StringVar(&config.Stage, "stage", "develop", "Specify stage for application")
+	pf.IntVar(&config.MaxRetries, "max-retries", 300, "Specify maximum number of tries to poll Nexus IQ Server")
+}
+
+func checkRequiredFlags(flags *pflag.FlagSet) {
+	if flags.Changed("path") == false {
+		panic(fmt.Errorf("Path not set, see usage for more information"))
+	}
+	if flags.Changed("application") == false {
+		panic(fmt.Errorf("Application not set, see usage for more information"))
+	}
 }
 
 func doParseSha1List(config *types.Config) (exitCode int, err error) {
