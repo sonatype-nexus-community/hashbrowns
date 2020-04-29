@@ -42,6 +42,12 @@ This can be used to audit generic environments for matches to known hashes that 
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.PrintErrorAndLogLocation(r)
+			}
+		}()
+
 		log = logger.GetLogger("", config.LogLevel)
 
 		log.Info("Running Fry Command")
@@ -70,12 +76,6 @@ func init() {
 }
 
 func doParseSha1List(config *types.Config) (exitCode int, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			logger.PrintErrorAndLogLocation(r)
-		}
-	}()
-
 	log.WithField("path", config.Path).Info("Checking for existence of path to sha1 file")
 	if _, err = os.Stat(config.Path); os.IsNotExist(err) {
 		log.WithField("error", err).Error("Path does not exist, returning")
@@ -99,7 +99,7 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 	log.WithField("sbom", sbom).Info("Beginning to submit SBOM to Nexus IQ Server")
 	res, err := iq.AuditPackages(sbom, config)
 	if err != nil {
-		log.WithField("err", err).Error("Unable to submit SBOM to Nexus IQ Server")
+		log.WithField("error", err).Error("Unable to submit SBOM to Nexus IQ Server")
 
 		panic(err)
 	}
