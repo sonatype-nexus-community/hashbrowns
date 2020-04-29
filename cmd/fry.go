@@ -89,10 +89,10 @@ func init() {
 }
 
 func checkRequiredFlags(flags *pflag.FlagSet) {
-	if flags.Changed("path") == false {
+	if !flags.Changed("path") {
 		panic(fmt.Errorf("Path not set, see usage for more information"))
 	}
-	if flags.Changed("application") == false {
+	if !flags.Changed("application") {
 		panic(fmt.Errorf("Application not set, see usage for more information"))
 	}
 }
