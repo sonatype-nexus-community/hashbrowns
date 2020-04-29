@@ -33,7 +33,7 @@ var config types.Config
 var rootCmd = &cobra.Command{
 	Use:   "hashbrowns",
 	Short: "A tool for auditing a list of sha1 sums and locations",
-	Long:  `Actual usage of this tool is used with the fry command. Please see hashbrowns fry --help for more information.`,
+	Long:  `Actual usage of this tool is accomplished with the fry command. Please see hashbrowns fry --help for more information.`,
 }
 
 func Execute() {
