@@ -26,22 +26,27 @@ func validateConfigFryError(t *testing.T, expectedErrorMsgSnippet string, expect
 	_, err := executeCommand(rootCmd, args...)
 
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), expectedErrorMsgSnippet)
+	assert.Equal(t, expectedErrorMsgSnippet, err.Error())
 }
 
-func TestFryCommandConfigDefaultsIncomplete(t *testing.T) {
+func TestFryCommandConfigDefaultsMissingPath(t *testing.T) {
 	validateConfigFryError(t,
-		"stat : no such file or directory",
+		"Path not set, see usage for more information",
 		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300},
 		"fry")
 }
 
-// TODO: Test errors in CircleCI, likely a different error message, we should likely use httpmock to simulate the response so we get
-// something more predictable
+func TestFryCommandConfigDefaultsMissingApplication(t *testing.T) {
+	validateConfigFryError(t,
+		"Application not set, see usage for more information",
+		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300, Path: "test/path"},
+		"fry", "--path=test/path")
+}
+
 func TestFryCommandConfigNoServerRunning(t *testing.T) {
 	validateConfigFryError(t,
-		"Get \"http://localhost:8070/api/v2/applications?publicId=\": dial tcp 127.0.0.1:8070: connect: connection refused",
+		"Get \"http://localhost:8070/api/v2/applications?publicId=testapp\": dial tcp 127.0.0.1:8070: connect: connection refused",
 		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300,
-			Path: "testdata/emptyFile"},
-		"fry", "--path=testdata/emptyFile")
+			Path: "testdata/emptyFile", Application: "testapp"},
+		"fry", "--path=testdata/emptyFile", "--application=testapp")
 }
