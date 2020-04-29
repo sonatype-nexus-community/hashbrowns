@@ -65,12 +65,13 @@ This can be used to audit generic environments for matches to known hashes that 
 		var exitCode int
 		if exitCode, err = doParseSha1List(&config); err != nil {
 			return
-		} else {
-			log.WithField("exit_code", exitCode).Trace("Obtained an exit code, exiting")
-			// TODO use something like ErrorExit custom error to pass up exit code, instead of calling os.Exit() here
-			os.Exit(exitCode)
 		}
-		return
+
+		if exitCode == 0 {
+			return
+		}
+
+		return fmt.Errorf("Non zero exit code: %d", exitCode)
 	},
 }
 
@@ -134,12 +135,12 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 	}
 
 	if res.PolicyAction != "Failure" {
-		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned a Failure Policy Action")
+		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned policy results")
 		fmt.Println("Wonderbar! No policy violations reported for this audit!")
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
-		return
+		return 0, nil
 	} else {
-		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned policy results")
+		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned a Failure Policy Action")
 		fmt.Println("Hi, Hashbrowns here, you have some policy violations to clean up!")
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
 		return 1, nil

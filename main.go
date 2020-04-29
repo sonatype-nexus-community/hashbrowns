@@ -17,6 +17,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/common-nighthawk/go-figure"
 	"github.com/sonatype-nexus-community/hashbrowns/buildversion"
@@ -25,7 +26,11 @@ import (
 
 func main() {
 	printHeader(true)
-	cmd.Execute()
+
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
 }
 
 func printHeader(print bool) {

@@ -36,10 +36,11 @@ var rootCmd = &cobra.Command{
 	Long:  `Actual usage of this tool is accomplished with the fry command. Please see hashbrowns fry --help for more information.`,
 }
 
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		os.Exit(1)
+func Execute() (err error) {
+	if err = rootCmd.Execute(); err != nil {
+		return
 	}
+	return nil
 }
 
 func init() {
