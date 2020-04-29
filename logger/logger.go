@@ -25,17 +25,17 @@ import (
 	"github.com/sonatype-nexus-community/nancy/types"
 )
 
-const DefaultLogFilename = "hashbrowns.combined.log"
+const defaultLogFilename = "hashbrowns.combined.log"
 
-var DefaultLogFile = DefaultLogFilename
+var DefaultLogFile = defaultLogFilename
 
 var logLady *logrus.Logger
 
 // GetLogger will either return the existing logger, or setup a new logger
-func GetLogger(loggerPath string, level int) *logrus.Logger {
+func GetLogger(loggerFilename string, level int) *logrus.Logger {
 	if logLady == nil {
 		logLevel := getLoggerLevelFromConfig(level)
-		err := setupLogger(loggerPath, &logLevel)
+		err := setupLogger(loggerFilename, &logLevel)
 		if err != nil {
 			panic(err)
 		}
@@ -54,18 +54,22 @@ func LogFileLocation() (result string, err error) {
 	return
 }
 
-func setupLogger(loggerPath string, level *logrus.Level) (err error) {
+func setupLogger(loggerFilename string, level *logrus.Level) (err error) {
 	logLady = logrus.New()
 
-	if loggerPath != "" {
-		DefaultLogFile = loggerPath
+	if loggerFilename != "" {
+		DefaultLogFile = loggerFilename
 	} else {
-		DefaultLogFile = DefaultLogFilename
+		DefaultLogFile = defaultLogFilename
 	}
 
 	if level == nil {
 		logLady.Level = logrus.ErrorLevel
 	} else {
+		// Done because report caller adds 20-40% overhead per logrus docs, only set this when we want to debug
+		if *level > logrus.DebugLevel {
+			logLady.SetReportCaller(true)
+		}
 		logLady.Level = *level
 	}
 
