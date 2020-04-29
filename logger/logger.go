@@ -46,7 +46,7 @@ func GetLogger(loggerFilename string, level int) *logrus.Logger {
 
 func PrintErrorAndLogLocation(err error) {
 	fmt.Println("Uh oh, an error occurred")
-	fmt.Println("Error: ", err)
+	fmt.Printf("Error: %v\n", err)
 	location, _ := LogFileLocation()
 	fmt.Printf("Check log file at %s for more information\n", location)
 }
