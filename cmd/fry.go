@@ -39,13 +39,14 @@ var fryCmd = &cobra.Command{
 	Long: `Provided a path to a file with sha1's and locations, this command will submit them to Nexus IQ Server.
 
 This can be used to audit generic environments for matches to known hashes that do not meet your org's policy.`,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log = logger.GetLogger("", config.LogLevel)
 
 		log.Info("Running Fry Command")
 
 		if exitCode, err := doParseSha1List(&config); err != nil {
-			log.Error(err)
 			return err
 		} else {
 			log.WithField("exit_code", exitCode).Trace("Obtained an exit code, exiting")
@@ -69,17 +70,25 @@ func init() {
 }
 
 func doParseSha1List(config *types.Config) (exitCode int, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.PrintErrorAndLogLocation(r)
+		}
+	}()
+
 	log.WithField("path", config.Path).Info("Checking for existence of path to sha1 file")
 	if _, err = os.Stat(config.Path); os.IsNotExist(err) {
 		log.WithField("error", err).Error("Path does not exist, returning")
-		return
+
+		panic(err)
 	}
 
 	log.WithField("path", config.Path).Info("Beginning parsing of file into sha1 type")
 	sha1s, err := parse.ParseSha1File(config.Path)
 	if err != nil {
 		log.WithField("error", err).Error("Error parsing sha1 file into sha1 type")
-		return
+
+		panic(err)
 	}
 	log.WithField("sha1s", sha1s).Debug("Obtained sha1 struct from ParseSha1File")
 
@@ -91,6 +100,8 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 	res, err := iq.AuditPackages(sbom, config)
 	if err != nil {
 		log.WithField("err", err).Error("Unable to submit SBOM to Nexus IQ Server")
+
+		panic(err)
 	}
 	log.WithField("res", res).Trace("Obtained response from Nexus IQ Server")
 
