@@ -35,7 +35,10 @@ var logLady *logrus.Logger
 func GetLogger(loggerPath string, level int) *logrus.Logger {
 	if logLady == nil {
 		logLevel := getLoggerLevelFromConfig(level)
-		setupLogger(loggerPath, &logLevel)
+		err := setupLogger(loggerPath, &logLevel)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return logLady
 }
