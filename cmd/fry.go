@@ -41,9 +41,15 @@ var fryCmd = &cobra.Command{
 This can be used to audit generic environments for matches to known hashes that do not meet your org's policy.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		defer func() {
 			if r := recover(); r != nil {
+				var ok bool
+				err, ok = r.(error)
+				if !ok {
+					err = fmt.Errorf("pkg: %v", r)
+				}
+
 				logger.PrintErrorAndLogLocation(r)
 			}
 		}()
@@ -52,14 +58,15 @@ This can be used to audit generic environments for matches to known hashes that 
 
 		log.Info("Running Fry Command")
 
-		if exitCode, err := doParseSha1List(&config); err != nil {
-			return err
+		var exitCode int
+		if exitCode, err = doParseSha1List(&config); err != nil {
+			return
 		} else {
 			log.WithField("exit_code", exitCode).Trace("Obtained an exit code, exiting")
 			// TODO use something like ErrorExit custom error to pass up exit code, instead of calling os.Exit() here
 			os.Exit(exitCode)
 		}
-		return nil
+		return
 	},
 }
 
