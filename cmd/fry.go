@@ -50,7 +50,7 @@ This can be used to audit generic environments for matches to known hashes that 
 					err = fmt.Errorf("pkg: %v", r)
 				}
 
-				logger.PrintErrorAndLogLocation(r)
+				logger.PrintErrorAndLogLocation(err)
 			}
 		}()
 
