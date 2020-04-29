@@ -48,7 +48,7 @@ func PrintErrorAndLogLocation(err interface{}) {
 	fmt.Println("Uh oh, an error occurred")
 	fmt.Println("Error: ", err)
 	location, _ := LogFileLocation()
-	fmt.Println(fmt.Sprintf("Check log file at %s for more information", location))
+	fmt.Printf("Check log file at %s for more information\n", location)
 }
 
 // LogFileLocation will return the location on disk of the log file
