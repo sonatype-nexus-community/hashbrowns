@@ -15,7 +15,9 @@
 //
 package main
 
-import "github.com/sonatype-nexus-community/hashbrowns/cmd"
+import (
+	"github.com/sonatype-nexus-community/hashbrowns/cmd"
+)
 
 func main() {
 	cmd.Execute()

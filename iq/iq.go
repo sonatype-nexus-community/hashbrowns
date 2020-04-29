@@ -25,10 +25,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"github.com/sonatype-nexus-community/hashbrowns/logger"
 	hashtypes "github.com/sonatype-nexus-community/hashbrowns/types"
 	"github.com/sonatype-nexus-community/nancy/customerrors"
 	"github.com/sonatype-nexus-community/nancy/types"
-	"github.com/sonatype-nexus-community/nancy/useragent"
+	useragent "github.com/sonatype-nexus-community/nancy/useragent"
 )
 
 const internalApplicationIDURL = "/api/v2/applications?publicId="
@@ -61,24 +63,44 @@ type thirdPartyAPIResult struct {
 
 var statusURLResp types.StatusURLResult
 
+var log *logrus.Logger
+
 // AuditPackages accepts a slice of purls, public application ID, and configuration, and will submit these to
 // Nexus IQ Server for audit, and return a struct of StatusURLResult
 func AuditPackages(sbom string, config *hashtypes.Config) (types.StatusURLResult, error) {
+	log = logger.GetLogger("", config.LogLevel)
+
+	useragent.CLIENTTOOL = "hashbrowns-client"
+	log.WithField("client", useragent.CLIENTTOOL).Trace("Setting the user agent")
+
 	localConfig = config
 
 	if localConfig.User == "admin" && localConfig.Token == "admin123" {
+		log.Trace("Warning user of bad life choices, default Nexus IQ Server user and password")
 		warnUserOfBadLifeChoices()
 	}
 
+	log.WithField("application_id", config.Application).Debug("Getting internal application ID from Nexus IQ Server")
 	internalID, err := getInternalApplicationID(config.Application)
 	if internalID == "" && err != nil {
+		log.WithField("error", err).Error("Unable to obtain internal application ID from Nexus IQ Server")
 		return statusURLResp, err
 	}
 
+	log.WithFields(logrus.Fields{
+		"internal_id": internalID,
+		"sbom":        sbom,
+	}).Debug("Submitting SBOM to Nexus IQ Server")
 	statusURL, err := submitToThirdPartyAPI(sbom, internalID)
 	if statusURL == "" || err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+			"sbom":  sbom,
+		}).Error("Unable to submit sbom to Nexus IQ Server")
+
 		return statusURLResp, fmt.Errorf("There was an issue submitting your sbom to the Nexus IQ Third Party API, sbom: %s", sbom)
 	}
+	log.WithField("status_url", statusURL).Trace("Obtained StatusURL from Nexus IQ Server")
 
 	statusURLResp = types.StatusURLResult{}
 

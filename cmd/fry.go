@@ -20,13 +20,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/sonatype-nexus-community/hashbrowns/iq"
+	"github.com/sonatype-nexus-community/hashbrowns/logger"
 	"github.com/sonatype-nexus-community/hashbrowns/parse"
 	"github.com/sonatype-nexus-community/hashbrowns/types"
 
 	"github.com/sonatype-nexus-community/nancy/cyclonedx"
 	"github.com/spf13/cobra"
 )
+
+var log *logrus.Logger
 
 // fryCmd represents the fry command
 var fryCmd = &cobra.Command{
@@ -35,15 +39,20 @@ var fryCmd = &cobra.Command{
 	Long: `Provided a path to a file with sha1's and locations, this command will submit them to Nexus IQ Server.
 
 This can be used to audit generic environments for matches to known hashes that do not meet your org's policy.`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		var exitCode int
-		if exitCode, err = doParseSha1List(&config); err != nil {
-			return
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log = logger.GetLogger("", config.LogLevel)
+
+		log.Info("Running Fry Command")
+
+		if exitCode, err := doParseSha1List(&config); err != nil {
+			log.Error(err)
+			return err
 		} else {
+			log.WithField("exit_code", exitCode).Trace("Obtained an exit code, exiting")
 			// TODO use something like ErrorExit custom error to pass up exit code, instead of calling os.Exit() here
 			os.Exit(exitCode)
 		}
-		return
+		return nil
 	},
 }
 
@@ -60,28 +69,44 @@ func init() {
 }
 
 func doParseSha1List(config *types.Config) (exitCode int, err error) {
+	log.WithField("path", config.Path).Info("Checking for existence of path to sha1 file")
 	if _, err = os.Stat(config.Path); os.IsNotExist(err) {
+		log.WithField("error", err).Error("Path does not exist, returning")
 		return
 	}
+
+	log.WithField("path", config.Path).Info("Beginning parsing of file into sha1 type")
 	sha1s, err := parse.ParseSha1File(config.Path)
 	if err != nil {
+		log.WithField("error", err).Error("Error parsing sha1 file into sha1 type")
 		return
 	}
+	log.WithField("sha1s", sha1s).Debug("Obtained sha1 struct from ParseSha1File")
 
+	log.WithField("sha1s", sha1s).Info("Beginning to obtain SBOM")
 	sbom := cyclonedx.SBOMFromSHA1(sha1s)
+	log.WithField("sbom", sbom).Trace("SBOM obtained")
 
+	log.WithField("sbom", sbom).Info("Beginning to submit SBOM to Nexus IQ Server")
 	res, err := iq.AuditPackages(sbom, config)
+	if err != nil {
+		log.WithField("err", err).Error("Unable to submit SBOM to Nexus IQ Server")
+	}
+	log.WithField("res", res).Trace("Obtained response from Nexus IQ Server")
 
 	fmt.Println()
 	if res.IsError {
+		log.WithField("err", res.ErrorMessage).Error("Nexus IQ Server responded with an error")
 		return 2, errors.New(res.ErrorMessage)
 	}
 
 	if res.PolicyAction != "Failure" {
+		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned a Failure Policy Action")
 		fmt.Println("Wonderbar! No policy violations reported for this audit!")
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
 		return
 	} else {
+		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned policy results")
 		fmt.Println("Hi, Hashbrowns here, you have some policy violations to clean up!")
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
 		return 1, nil
