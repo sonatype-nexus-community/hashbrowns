@@ -19,17 +19,14 @@ import (
 	"testing"
 
 	"github.com/sonatype-nexus-community/hashbrowns/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func validateConfigFryError(t *testing.T, expectedErrorMsgSnippet string, expectedConfig types.Config, args ...string) {
-	out, err := executeCommand(rootCmd, args...)
+	_, err := executeCommand(rootCmd, args...)
 
-	if out != "" {
-		t.Error(out)
-	}
-	if err == nil {
-		t.Error(err)
-	}
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), expectedErrorMsgSnippet)
 }
 
 func TestFryCommandConfigDefaultsIncomplete(t *testing.T) {
@@ -43,7 +40,7 @@ func TestFryCommandConfigDefaultsIncomplete(t *testing.T) {
 // something more predictable
 func TestFryCommandConfigNoServerRunning(t *testing.T) {
 	validateConfigFryError(t,
-		"Get \"http://localhost:8070/api/v2/applications?publicId=\": dial tcp [::1]:8070: connect: connection refused",
+		"Get \"http://localhost:8070/api/v2/applications?publicId=\": dial tcp 127.0.0.1:8070: connect: connection refused",
 		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300,
 			Path: "testdata/emptyFile"},
 		"fry", "--path=testdata/emptyFile")
