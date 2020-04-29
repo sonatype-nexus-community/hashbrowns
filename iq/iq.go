@@ -28,7 +28,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sonatype-nexus-community/hashbrowns/logger"
 	hashtypes "github.com/sonatype-nexus-community/hashbrowns/types"
-	"github.com/sonatype-nexus-community/nancy/customerrors"
 	"github.com/sonatype-nexus-community/nancy/types"
 	useragent "github.com/sonatype-nexus-community/nancy/useragent"
 )
@@ -285,44 +284,73 @@ func submitToThirdPartyAPI(sbom string, internalID string) (string, error) {
 }
 
 func pollIQServer(statusURL string, finished chan bool, maxRetries int) {
+	log.WithFields(logrus.Fields{
+		"status_url":  statusURL,
+		"tries":       tries,
+		"max_retries": maxRetries,
+	}).Trace("Beginning a poll of Nexus IQ Server for results")
 	if tries > maxRetries {
+		log.WithField("max_retries", maxRetries).Info("Max tries exceeded, shutting down polling of Nexus IQ Server")
 		finished <- true
 	}
 
 	client := &http.Client{}
+
 	req, err := http.NewRequest("GET", statusURL, nil)
-	customerrors.Check(err, "Could not poll iQ server")
-
-	req.SetBasicAuth(localConfig.User, localConfig.Token)
-
-	req.Header.Set("User-Agent", useragent.GetUserAgent())
-
-	resp, err := client.Do(req)
-
 	if err != nil {
+		log.WithField("error", err).Error("Unable to setup request to poll Nexus IQ Server for results")
+		finished <- true
+	}
+
+	log.Info("Setting up basic auth, and getting user agent for poll request to Nexus IQ Server for results")
+	req.SetBasicAuth(localConfig.User, localConfig.Token)
+	req.Header.Set("User-Agent", useragent.GetUserAgent())
+	log.WithFields(logrus.Fields{
+		"user_agent": useragent.GetUserAgent(),
+	}).Trace("Set up basic auth, and got user agent for poll request to Nexus IQ Server for results")
+
+	log.Info("Making request to Nexus IQ Server for internal application ID")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.WithField("error", err).Error("Unable to do request to poll Nexus IQ Server for results")
 		finished <- true
 	}
 
 	defer resp.Body.Close()
 
+	log.Info("Checking response from polling Nexus IQ Server for results")
 	if resp.StatusCode == http.StatusOK {
+		log.Info("Response valid from polling Nexus IQ Server for results, moving forward")
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to read response body from polling Nexus IQ Server for results")
+
 			panic(err)
 		}
+		log.WithField("body_bytes", string(bodyBytes)).Trace("Obtained a response body from polling Nexus IQ Server for results")
 
+		log.Info("Attempting to unmarshal response from polling Nexus IQ Server for results")
 		var response types.StatusURLResult
 		err = json.Unmarshal(bodyBytes, &response)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to unmarshal response body from polling Nexus IQ Server for results")
+
 			panic(err)
 		}
+		log.WithField("response", response).Trace("Successfully unmarshal'd response from polling Nexus IQ Server for results, returning")
 
 		statusURLResp = response
 		if response.IsError {
+			log.WithField("response", response).Error("Nexus IQ Server responded with an error (but valid request) for report")
 			finished <- true
 		}
 		finished <- true
 	}
+	log.Info("Nexus IQ Server gave a 404 response to polling, incrementing tries and moving forward")
 	tries++
 	fmt.Print(".")
 }
