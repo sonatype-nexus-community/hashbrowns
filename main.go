@@ -35,7 +35,7 @@ func main() {
 
 func printHeader(print bool) {
 	if print {
-		figure.NewFigure("Hashbrowns", "larry3d", true).Print()
+		figure.NewFigure("Hashbrowns", "isometric1", true).Print()
 		figure.NewFigure("By Sonatype & Friends", "pepper", true).Print()
 
 		fmt.Println("Hashbrowns version: " + buildversion.BuildVersion)
