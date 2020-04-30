@@ -57,17 +57,20 @@ func parseSpaceSeperatedLocationAndSha1(scanner *bufio.Scanner) (sha1 types.Sha1
 }
 
 func removeDuplicates(sha1s []types.Sha1SBOM) (dedupedSha1s []types.Sha1SBOM) {
+	log.WithField("sha1s", sha1s).Debug("Beginning to remove duplicates")
 	encountered := map[string]bool{}
 
 	for _, v := range sha1s {
 		if encountered[v.Sha1] {
-			log.WithField("sha1", v).Debug("Found duplicate sha1, eliminating it")
+			log.WithField("sha1", v).Trace("Found duplicate sha1, eliminating it")
 		} else {
-			log.WithField("sha1", v).Debug("Unique sha1, adding it")
+			log.WithField("sha1", v).Trace("Unique sha1, adding it")
 			encountered[v.Sha1] = true
 			dedupedSha1s = append(dedupedSha1s, v)
 		}
 	}
+
+	log.WithField("sha1s", dedupedSha1s).Debug("Finished removeing duplicates")
 
 	return
 }
