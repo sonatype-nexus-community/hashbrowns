@@ -2,3 +2,6 @@ hashbrowns
 garbage.txt
 .cache
 dist/
+
+# ci config for local ci build
+.circleci/local-config.yml
