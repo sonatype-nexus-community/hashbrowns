@@ -81,7 +81,7 @@ func setupLogger(loggerFilename string, level *logrus.Level) (err error) {
 		logLady.Level = *level
 	}
 
-	logLady.Formatter = &logrus.JSONFormatter{}
+	logLady.Formatter = &logrus.JSONFormatter{DisableHTMLEscape: true}
 
 	location, err := LogFileLocation()
 	if err != nil {

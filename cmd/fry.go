@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/sonatype-nexus-community/hashbrowns/iq"
@@ -117,6 +118,9 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 
 	log.WithField("sha1s", sha1s).Info("Beginning to obtain SBOM")
 	sbom := cyclonedx.SBOMFromSHA1(sha1s)
+	log.Info("Removing newlines from sbom")
+	sbom = strings.Replace(sbom, "\n", "", -1)
+
 	log.WithField("sbom", sbom).Trace("SBOM obtained")
 
 	log.WithField("sbom", sbom).Info("Beginning to submit SBOM to Nexus IQ Server")
