@@ -15,8 +15,29 @@
 //
 package main
 
-import "github.com/sonatype-nexus-community/hashbrowns/cmd"
+import (
+	"fmt"
+	"os"
+
+	"github.com/common-nighthawk/go-figure"
+	"github.com/sonatype-nexus-community/hashbrowns/buildversion"
+	"github.com/sonatype-nexus-community/hashbrowns/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	printHeader(true)
+
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+func printHeader(print bool) {
+	if print {
+		figure.NewFigure("Hashbrowns", "isometric1", true).Print()
+		figure.NewFigure("By Sonatype & Friends", "pepper", true).Print()
+
+		fmt.Println("Hashbrowns version: " + buildversion.BuildVersion)
+	}
 }

@@ -25,10 +25,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"github.com/sonatype-nexus-community/hashbrowns/logger"
 	hashtypes "github.com/sonatype-nexus-community/hashbrowns/types"
-	"github.com/sonatype-nexus-community/nancy/customerrors"
 	"github.com/sonatype-nexus-community/nancy/types"
-	"github.com/sonatype-nexus-community/nancy/useragent"
+	useragent "github.com/sonatype-nexus-community/nancy/useragent"
 )
 
 const internalApplicationIDURL = "/api/v2/applications?publicId="
@@ -36,6 +37,8 @@ const internalApplicationIDURL = "/api/v2/applications?publicId="
 const thirdPartyAPILeft = "/api/v2/scan/applications/"
 
 const thirdPartyAPIRight = "/sources/nancy?stageId="
+
+const contentTypeApplicationXML = "application/xml"
 
 const (
 	pollInterval = 1 * time.Second
@@ -61,24 +64,44 @@ type thirdPartyAPIResult struct {
 
 var statusURLResp types.StatusURLResult
 
+var log *logrus.Logger
+
 // AuditPackages accepts a slice of purls, public application ID, and configuration, and will submit these to
 // Nexus IQ Server for audit, and return a struct of StatusURLResult
 func AuditPackages(sbom string, config *hashtypes.Config) (types.StatusURLResult, error) {
+	log = logger.GetLogger("", config.LogLevel)
+
+	useragent.CLIENTTOOL = "hashbrowns-client"
+	log.WithField("client", useragent.CLIENTTOOL).Trace("Setting the user agent")
+
 	localConfig = config
 
 	if localConfig.User == "admin" && localConfig.Token == "admin123" {
+		log.Trace("Warning user of bad life choices, default Nexus IQ Server user and password")
 		warnUserOfBadLifeChoices()
 	}
 
+	log.WithField("application_id", config.Application).Debug("Getting internal application ID from Nexus IQ Server")
 	internalID, err := getInternalApplicationID(config.Application)
 	if internalID == "" && err != nil {
+		log.WithField("error", err).Error("Unable to obtain internal application ID from Nexus IQ Server")
 		return statusURLResp, err
 	}
 
+	log.WithFields(logrus.Fields{
+		"internal_id": internalID,
+		"sbom":        sbom,
+	}).Debug("Submitting SBOM to Nexus IQ Server")
 	statusURL, err := submitToThirdPartyAPI(sbom, internalID)
 	if statusURL == "" || err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+			"sbom":  sbom,
+		}).Error("Unable to submit sbom to Nexus IQ Server")
+
 		return statusURLResp, fmt.Errorf("There was an issue submitting your sbom to the Nexus IQ Third Party API, sbom: %s", sbom)
 	}
+	log.WithField("status_url", statusURL).Trace("Obtained StatusURL from Nexus IQ Server")
 
 	statusURLResp = types.StatusURLResult{}
 
@@ -90,6 +113,7 @@ func AuditPackages(sbom string, config *hashtypes.Config) (types.StatusURLResult
 			case <-finished:
 				return
 			default:
+				log.WithField("status_url", statusURL).Trace("Polling Nexus IQ Server for response")
 				pollIQServer(fmt.Sprintf("%s/%s", localConfig.Server, statusURL), finished, localConfig.MaxRetries)
 				time.Sleep(pollInterval)
 			}
@@ -101,135 +125,232 @@ func AuditPackages(sbom string, config *hashtypes.Config) (types.StatusURLResult
 }
 
 func getInternalApplicationID(applicationID string) (string, error) {
+	log.WithField("application_id", applicationID).Debug("Beginning to obtain internal application ID from Nexus IQ Server")
 	client := &http.Client{}
 
+	url := fmt.Sprintf("%s%s%s", localConfig.Server, internalApplicationIDURL, applicationID)
+
+	log.WithFields(logrus.Fields{
+		"url": url,
+	}).Trace("Setting up request to Nexus IQ Server for internal application ID")
 	req, err := http.NewRequest(
 		"GET",
-		fmt.Sprintf("%s%s%s", localConfig.Server, internalApplicationIDURL, applicationID),
+		url,
 		nil,
 	)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Unable to obtain internal application ID from Nexus IQ Server")
+
 		return "", err
 	}
 
+	log.Info("Setting up basic auth, and getting user agent for request to Nexus IQ Server for internal application ID")
 	req.SetBasicAuth(localConfig.User, localConfig.Token)
 	req.Header.Set("User-Agent", useragent.GetUserAgent())
+	log.WithFields(logrus.Fields{
+		"user_agent": useragent.GetUserAgent(),
+	}).Trace("Set up basic auth and user agent for request to Nexus IQ Server for internal application ID")
 
+	log.Info("Making request to Nexus IQ Server for internal application ID")
 	resp, err := client.Do(req)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+			"resp":  resp,
+		}).Error("Unable to obtain internal application ID from Nexus IQ Server")
+
 		return "", err
 	}
 
 	defer resp.Body.Close()
 
+	log.Info("Checking response from Nexus IQ Server for internal application ID")
 	if resp.StatusCode == http.StatusOK {
+		log.Info("Response from Nexus IQ Server for internal application ID valid, moving forward")
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to obtain internal application ID from Nexus IQ Server")
+
 			return "", err
 		}
+		log.WithField("body_bytes", string(bodyBytes)).Trace("Obtained a response body from Nexus IQ Server for internal application ID")
 
+		log.Info("Attempting to unmarshal response from Nexus IQ Server")
 		var response applicationResponse
 		err = json.Unmarshal(bodyBytes, &response)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to obtain internal application ID from Nexus IQ Server")
+
 			return "", err
 		}
+		log.WithField("response", response).Trace("Successfully unmarshal'd response from Nexus IQ Server for internal application ID")
 
 		if response.Applications != nil && len(response.Applications) > 0 {
+			log.WithField("internal_application_id", response.Applications[0].ID).Trace("Obtained internal application ID, returning")
+
 			return response.Applications[0].ID, nil
 		}
 
+		log.Error("Unable to obtain internal application ID from Nexus IQ Server")
 		return "", fmt.Errorf("Unable to retrieve an internal ID for the specified public application ID: %s", applicationID)
 	}
 
+	log.WithField("status_code", resp.StatusCode).Error("Unable to obtain internal application ID from Nexus IQ Server")
 	return "", fmt.Errorf("Unable to communicate with Nexus IQ Server, status code returned is: %d", resp.StatusCode)
 }
 
 func submitToThirdPartyAPI(sbom string, internalID string) (string, error) {
+	log.WithFields(logrus.Fields{
+		"internal_application_id": internalID,
+		"sbom":                    sbom,
+	}).Debug("Beginning to submit SBOM to Nexus IQ Server")
 	client := &http.Client{}
 
 	url := fmt.Sprintf("%s%s", localConfig.Server, fmt.Sprintf("%s%s%s%s", thirdPartyAPILeft, internalID, thirdPartyAPIRight, localConfig.Stage))
 
+	log.WithFields(logrus.Fields{
+		"url": url,
+	}).Trace("Setting up request to Nexus IQ Server to submit SBOM")
 	req, err := http.NewRequest(
 		"POST",
 		url,
 		bytes.NewBuffer([]byte(sbom)),
 	)
-
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Unable to setup POST request to Nexus IQ Server for submitting SBOM")
+
 		return "", err
 	}
 
+	log.Info("Setting up basic auth, getting user agent, and setting content type for request to Nexus IQ Server for submitting SBOM")
 	req.SetBasicAuth(localConfig.User, localConfig.Token)
 	req.Header.Set("User-Agent", useragent.GetUserAgent())
-	req.Header.Set("Content-Type", "application/xml")
+	req.Header.Set("Content-Type", contentTypeApplicationXML)
+	log.WithFields(logrus.Fields{
+		"user_agent":   useragent.GetUserAgent(),
+		"content_type": contentTypeApplicationXML,
+	}).Trace("Set up basic auth, user agent and content type for request to Nexus IQ Server for submitting SBOM")
 
+	log.Info("Making request to Nexus IQ Server for internal application ID")
 	resp, err := client.Do(req)
 	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Unable to do POST request to Nexus IQ Server for submitting SBOM")
+
 		return "", err
 	}
 
 	defer resp.Body.Close()
 
-	// by, _ := ioutil.ReadAll(resp.Body)
-
-	// fmt.Print(string(by))
-
+	log.Info("Checking response from Nexus IQ Server for submitting SBOM")
 	if resp.StatusCode == http.StatusAccepted {
+		log.Info("Response valid from Nexus IQ Server for submitting SBOM, moving forward")
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to read response body from Nexus IQ Server for submitting SBOM")
+
 			return "", err
 		}
+		log.WithField("body_bytes", string(bodyBytes)).Trace("Obtained a response body from Nexus IQ Server for submitting SBOM")
 
+		log.Info("Attempting to unmarshal response from Nexus IQ Server for submitting SBOM")
 		var response thirdPartyAPIResult
 		err = json.Unmarshal(bodyBytes, &response)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to unmarshal response body from Nexus IQ Server for submitting SBOM")
+
 			return "", err
 		}
+		log.WithField("response", response).Trace("Successfully unmarshal'd response from Nexus IQ Server for submitting SBOM, returning")
+
 		return response.StatusURL, nil
 	}
 
+	log.WithField("status_code", resp.StatusCode).Error("Unable to submit SBOM to Nexus IQ Server")
 	return "", nil
 }
 
 func pollIQServer(statusURL string, finished chan bool, maxRetries int) {
+	log.WithFields(logrus.Fields{
+		"status_url":  statusURL,
+		"tries":       tries,
+		"max_retries": maxRetries,
+	}).Trace("Beginning a poll of Nexus IQ Server for results")
 	if tries > maxRetries {
+		log.WithField("max_retries", maxRetries).Info("Max tries exceeded, shutting down polling of Nexus IQ Server")
 		finished <- true
 	}
 
 	client := &http.Client{}
+
 	req, err := http.NewRequest("GET", statusURL, nil)
-	customerrors.Check(err, "Could not poll iQ server")
-
-	req.SetBasicAuth(localConfig.User, localConfig.Token)
-
-	req.Header.Set("User-Agent", useragent.GetUserAgent())
-
-	resp, err := client.Do(req)
-
 	if err != nil {
+		log.WithField("error", err).Error("Unable to setup request to poll Nexus IQ Server for results")
+		finished <- true
+	}
+
+	log.Info("Setting up basic auth, and getting user agent for poll request to Nexus IQ Server for results")
+	req.SetBasicAuth(localConfig.User, localConfig.Token)
+	req.Header.Set("User-Agent", useragent.GetUserAgent())
+	log.WithFields(logrus.Fields{
+		"user_agent": useragent.GetUserAgent(),
+	}).Trace("Set up basic auth, and got user agent for poll request to Nexus IQ Server for results")
+
+	log.Info("Making request to Nexus IQ Server for internal application ID")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.WithField("error", err).Error("Unable to do request to poll Nexus IQ Server for results")
 		finished <- true
 	}
 
 	defer resp.Body.Close()
 
+	log.Info("Checking response from polling Nexus IQ Server for results")
 	if resp.StatusCode == http.StatusOK {
+		log.Info("Response valid from polling Nexus IQ Server for results, moving forward")
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to read response body from polling Nexus IQ Server for results")
+
 			panic(err)
 		}
+		log.WithField("body_bytes", string(bodyBytes)).Trace("Obtained a response body from polling Nexus IQ Server for results")
 
+		log.Info("Attempting to unmarshal response from polling Nexus IQ Server for results")
 		var response types.StatusURLResult
 		err = json.Unmarshal(bodyBytes, &response)
 		if err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("Unable to unmarshal response body from polling Nexus IQ Server for results")
+
 			panic(err)
 		}
+		log.WithField("response", response).Trace("Successfully unmarshal'd response from polling Nexus IQ Server for results, returning")
 
 		statusURLResp = response
 		if response.IsError {
+			log.WithField("response", response).Error("Nexus IQ Server responded with an error (but valid request) for report")
 			finished <- true
 		}
 		finished <- true
 	}
+	log.Info("Nexus IQ Server gave a 404 response to polling, incrementing tries and moving forward")
 	tries++
 	fmt.Print(".")
 }

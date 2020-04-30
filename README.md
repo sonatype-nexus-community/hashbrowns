@@ -53,6 +53,17 @@ Global Flags:
   -v, -- count   Set log level, higher is more verbose
 ```
 
+### Generating a shasum file
+
+Depending on your operating system, you'll use something akin to `shasum` to get the sha1 and location of a file. A well formed `shasum` file looks like:
+
+```
+9987ca4f73d5ea0e534dfbf19238552df4de507e  main.go
+2a72a07fbc9de22308d12a32f7d33504349e63c9  Makefile
+```
+
+`hashbrowns` is built to parse the output of `shasum` generated entries, and the important part here is `shasum` seems to put two spaces between the sha1 and the file name. If `hashbrowns` doesn't work for you, file an issue on our repo here, it is likely because the output of your `shasum` command is different.
+
 ### Nexus IQ Server Options
 
 By default, assuming you have an out of the box Nexus IQ Server running, you can run `hashbrowns` like so:

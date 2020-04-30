@@ -18,6 +18,11 @@ before:
     - go mod tidy
 builds:
   -
+    ldflags:
+      - -s -w
+        -X "github.com/sonatype-nexus-community/hashbrowns/buildversion.BuildVersion={{.Version}}"
+        -X "github.com/sonatype-nexus-community/hashbrowns/buildversion.BuildTime={{time "2006-01-02T15:04:05Z07:00"}}"
+        -X "github.com/sonatype-nexus-community/hashbrowns/buildversion.BuildCommit={{.FullCommit}}"
     env:
       - CGO_ENABLED=0
     goos:
