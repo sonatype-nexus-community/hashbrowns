@@ -45,10 +45,10 @@ func TestFryCommandConfigDefaultsIncomplete(t *testing.T) {
 
 // TODO: Test errors in CircleCI, likely a different error message, we should likely use httpmock to simulate the response so we get
 // something more predictable
-// func TestFryCommandConfigNoServerRunning(t *testing.T) {
-// 	validateConfigFryError(t,
-// 		"Get \"http://localhost:8070/api/v2/applications?publicId=\": dial tcp [::1]:8070: connect: connection refused",
-// 		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300,
-// 			Path: "testdata/emptyFile"},
-// 		"fry", "--path=testdata/emptyFile")
-// }
+func TestFryCommandConfigNoServerRunning(t *testing.T) {
+	validateConfigFryError(t,
+		"Get \"http://localhost:8070/api/v2/applications?publicId=\": dial tcp [::1]:8070: connect: connection refused",
+		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300,
+			Path: "testdata/emptyFile"},
+		"fry", "--path=testdata/emptyFile")
+}
