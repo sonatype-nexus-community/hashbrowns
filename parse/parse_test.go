@@ -16,32 +16,19 @@
 package parse
 
 import (
-	"bufio"
-	"os"
-	"strings"
+	"path"
+	"testing"
 
-	"github.com/sonatype-nexus-community/nancy/types"
+	"github.com/stretchr/testify/assert"
 )
 
-func ParseSha1File(path string) (sha1s []types.Sha1SBOM, err error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return
-	}
-	defer file.Close()
+func TestParseSha1File(t *testing.T) {
+	results, err := ParseSha1File(path.Join("testdata", "thing.txt"))
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		sha1s = append(sha1s, parseSpaceSeperatedLocationAndSha1(scanner))
-	}
-
-	return
-}
-
-func parseSpaceSeperatedLocationAndSha1(scanner *bufio.Scanner) (sha1 types.Sha1SBOM) {
-	s := strings.Split(scanner.Text(), "  ")
-	sha1.Sha1 = s[0]
-	sha1.Location = s[1]
-
-	return
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(results))
+	assert.Equal(t, "main.go", results[0].Location)
+	assert.Equal(t, "9987ca4f73d5ea0e534dfbf19238552df4de507e", results[0].Sha1)
+	assert.Equal(t, "Makefile", results[1].Location)
+	assert.Equal(t, "2a72a07fbc9de22308d12a32f7d33504349e63c9", results[1].Sha1)
 }
