@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -74,11 +75,17 @@ func TestFryCommandConfigDefaultsMissingApplication(t *testing.T) {
 }
 
 func TestFryCommandConfigNoServerRunning(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterResponder("GET", "http://sillyplace.com:8090/api/v2/applications?publicId=testapp",
+		httpmock.NewErrorResponder(fmt.Errorf("dial tcp sillyplace.com:8090: connect: connection refused")))
+
 	validateConfigFryError(t,
-		"Get \"http://localhost:8070/api/v2/applications?publicId=testapp\": dial tcp 127.0.0.1:8070: connect: connection refused",
-		types.Config{User: "admin", Token: "admin123", Server: "http://localhost:8070", Stage: "develop", MaxRetries: 300,
+		"Get \"http://sillyplace.com:8090/api/v2/applications?publicId=testapp\": dial tcp sillyplace.com:8090: connect: connection refused",
+		types.Config{User: "admin", Token: "admin123", Server: "http://sillyplace.com:8090", Stage: "develop", MaxRetries: 300,
 			Path: "testdata/emptyFile", Application: "testapp"},
-		"fry", "--path=testdata/emptyFile", "--application=testapp")
+		"fry", "--path=testdata/emptyFile", "--application=testapp", "--server-url=http://sillyplace.com:8090")
 }
 
 func TestFryCommandWithRunningIQ(t *testing.T) {
