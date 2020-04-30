@@ -17,6 +17,7 @@ package parse
 
 import (
 	"path"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,4 +32,13 @@ func TestParseSha1File(t *testing.T) {
 	assert.Equal(t, "9987ca4f73d5ea0e534dfbf19238552df4de507e", results[0].Sha1)
 	assert.Equal(t, "Makefile", results[1].Location)
 	assert.Equal(t, "2a72a07fbc9de22308d12a32f7d33504349e63c9", results[1].Sha1)
+}
+
+func TestParseSha1FileBadPath(t *testing.T) {
+	results, err := ParseSha1File(path.Join("testdata", "doesnotexist.txt"))
+
+	assert.Nil(t, results)
+	assert.NotNil(t, err)
+	typeOfError := reflect.TypeOf(err).String()
+	assert.Equal(t, "*os.PathError", typeOfError)
 }
