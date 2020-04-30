@@ -108,7 +108,7 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 	}
 
 	log.WithField("path", config.Path).Info("Beginning parsing of file into sha1 type")
-	sha1s, err := parse.ParseSha1File(config.Path)
+	sha1s, err := parse.Sha1File(config.Path)
 	if err != nil {
 		log.WithField("error", err).Error("Error parsing sha1 file into sha1 type")
 

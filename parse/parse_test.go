@@ -24,7 +24,7 @@ import (
 )
 
 func TestParseSha1File(t *testing.T) {
-	results, err := ParseSha1File(path.Join("testdata", "thing.txt"))
+	results, err := Sha1File(path.Join("testdata", "thing.txt"))
 
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(results))
@@ -35,7 +35,7 @@ func TestParseSha1File(t *testing.T) {
 }
 
 func TestParseSha1FileBadPath(t *testing.T) {
-	results, err := ParseSha1File(path.Join("testdata", "doesnotexist.txt"))
+	results, err := Sha1File(path.Join("testdata", "doesnotexist.txt"))
 
 	assert.Nil(t, results)
 	assert.NotNil(t, err)
