@@ -21,15 +21,15 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"github.com/sonatype-nexus-community/go-sona-types/cyclonedx"
 	"github.com/sonatype-nexus-community/hashbrowns/logger"
-	"github.com/sonatype-nexus-community/nancy/types"
 )
 
 var log *logrus.Logger
 
 // Sha1File accepts a path to a file that has shasums for files, and returns them as a
 // slice of types.Sha1SBOM, or an error if there was an issue processing the file
-func Sha1File(path string) (sha1s []types.Sha1SBOM, err error) {
+func Sha1File(path string) (sha1s []cyclonedx.Sha1SBOM, err error) {
 	log = logger.GetLogger("", 0)
 
 	file, err := os.Open(path)
@@ -48,7 +48,7 @@ func Sha1File(path string) (sha1s []types.Sha1SBOM, err error) {
 	return
 }
 
-func parseSpaceSeperatedLocationAndSha1(scanner *bufio.Scanner) (sha1 types.Sha1SBOM) {
+func parseSpaceSeperatedLocationAndSha1(scanner *bufio.Scanner) (sha1 cyclonedx.Sha1SBOM) {
 	s := strings.Split(scanner.Text(), "  ")
 	sha1.Sha1 = s[0]
 	sha1.Location = s[1]
@@ -56,7 +56,7 @@ func parseSpaceSeperatedLocationAndSha1(scanner *bufio.Scanner) (sha1 types.Sha1
 	return
 }
 
-func removeDuplicates(sha1s []types.Sha1SBOM) (dedupedSha1s []types.Sha1SBOM) {
+func removeDuplicates(sha1s []cyclonedx.Sha1SBOM) (dedupedSha1s []cyclonedx.Sha1SBOM) {
 	log.WithField("sha1s", sha1s).Debug("Beginning to remove duplicates")
 	encountered := map[string]bool{}
 
