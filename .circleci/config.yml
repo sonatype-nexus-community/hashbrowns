@@ -13,6 +13,10 @@
 # limitations under the License.
 
 version: 2.1
+
+orbs:
+  circleci-nancy-orb: sonatype-nexus-community/circleci-nancy-orb@0.0.26
+
 jobs:
   release:
     docker:
@@ -47,6 +51,8 @@ jobs:
           path: /tmp/test-results/
       - store_test_results:
           path: /tmp/test-results/
+      - circleci-nancy-orb/install-nancy
+      - circleci-nancy-orb/run-nancy
 
 
 workflows:
