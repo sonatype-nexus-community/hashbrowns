@@ -15,7 +15,7 @@
 version: 2.1
 
 orbs:
-  circleci-nancy-orb: sonatype-nexus-community/circleci-nancy-orb@0.0.26
+  circleci-nancy-orb: sonatype-nexus-community/circleci-nancy-orb@0
 
 jobs:
   release:
