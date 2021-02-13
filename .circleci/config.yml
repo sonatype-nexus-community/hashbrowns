@@ -15,7 +15,7 @@
 version: 2.1
 
 orbs:
-  circleci-nancy-orb: sonatype-nexus-community/circleci-nancy-orb@0
+  nancy: sonatype-nexus-community/circleci-nancy-orb@0
 
 jobs:
   release:
@@ -51,8 +51,8 @@ jobs:
           path: /tmp/test-results/
       - store_test_results:
           path: /tmp/test-results/
-      - circleci-nancy-orb/install-nancy
-      - circleci-nancy-orb/run-nancy
+      - nancy/install-nancy
+      - nancy/run-nancy
 
 
 workflows:
