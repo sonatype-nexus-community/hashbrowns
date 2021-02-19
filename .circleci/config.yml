@@ -13,6 +13,10 @@
 # limitations under the License.
 
 version: 2.1
+
+orbs:
+  nancy: sonatype-nexus-community/circleci-nancy-orb@0
+
 jobs:
   release:
     docker:
@@ -47,6 +51,8 @@ jobs:
           path: /tmp/test-results/
       - store_test_results:
           path: /tmp/test-results/
+      - nancy/install-nancy
+      - nancy/run-nancy
 
 
 workflows:
@@ -61,3 +67,13 @@ workflows:
               ignore: /.*/
             tags:
               only: /v[0-9]+(\.[0-9]+)*(-.*)*/
+
+  build_nightly:
+    triggers:
+      - schedule:
+          cron: "55 20 * * *"
+          filters:
+            branches:
+              only: master
+    jobs:
+      - build
