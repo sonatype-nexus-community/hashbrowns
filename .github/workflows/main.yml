@@ -2,14 +2,14 @@ name: GHA Go Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
 
   build_via_make:
-    name: Build
+    name: Build via Make
     runs-on: ubuntu-latest
     steps:
 

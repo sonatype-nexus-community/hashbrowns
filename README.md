@@ -143,7 +143,7 @@ a new issue, or comment on an existing issue, to let others know you are!
 
 Follow the steps below to release a new version. You need to be part of the `deploy from circle ci` group for this to work.
 
-1. Checkout/pull the latest `master` branch, and create a new tag with the desired semantic version and a helpful note:
+1. Checkout/pull the latest `main` branch, and create a new tag with the desired semantic version and a helpful note:
 
        git tag -a v0.0.x -m "Helpful message in tag."
 

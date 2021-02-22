@@ -74,6 +74,6 @@ workflows:
           cron: "55 20 * * *"
           filters:
             branches:
-              only: master
+              only: main
     jobs:
       - build
