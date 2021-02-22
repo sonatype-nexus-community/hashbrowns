@@ -1,31 +1,47 @@
-name: nancy-gh-action
+name: GHA Go Build
 
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+
+  build_via_make:
+    name: Build
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
 
-      - name: Set up Go 1.x in order to write go.list file
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.14
-      - name: WriteGoList
-        run: go list -json -m all > go.list
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
 
-      - name: Nancy
-        uses: sonatype-nexus-community/nancy-github-action@main
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Install make
+      run: |
+        sudo apt-get update
+        sudo apt-get install make
+
+    - name: Build and Test
+      env:
+#       Set CGO_ENABLED to 0 to fix linter error (in `make ci-lint` call) shown below:
+#        | ERRO Running error: buildir: failed to load package net: could not load export data: no export data for "net"
+        CGO_ENABLED: 0
+        TEST_RESULTS: /tmp/test-results
+      run: |
+        mkdir -p $TEST_RESULTS/gotest
+        go get -u github.com/jstemmer/go-junit-report
+        make deps
+        make ci-lint
+        make test | go-junit-report > $TEST_RESULTS/gotest/report.xml
+
+    - name: WriteGoList
+      run: go list -json -m all > go.list
+
+    - name: Scan with latest Nancy
+      uses: sonatype-nexus-community/nancy-github-action@main
