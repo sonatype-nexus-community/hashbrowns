@@ -1,6 +1,6 @@
 # hashbrowns
 
-[![CircleCI](https://circleci.com/gh/sonatype-nexus-community/hashbrowns.svg?style=svg)](https://circleci.com/gh/sonatype-nexus-community/hashbrowns)
+[![CircleCI](https://circleci.com/gh/sonatype-nexus-community/hashbrowns.svg?style=shield)](https://circleci.com/gh/sonatype-nexus-community/hashbrowns)
 <a href="https://github.com/sonatype-nexus-community/hashbrowns/actions"><img src="https://github.com/sonatype-nexus-community/hashbrowns/workflows/nancy-gh-action/badge.svg" alt="nancy-gh-action"></img></a>
 
 Hashbrowns is a utility for scanning sha1 sums akin to:
