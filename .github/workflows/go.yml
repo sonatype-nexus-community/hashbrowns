@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build:
+  build_via_make:
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -28,13 +28,17 @@ jobs:
         sudo apt-get install make
 
     - name: Build and Test
+      env:
+#       Set CGO_ENABLED to 0 to fix linter error (in `make ci-lint` call) shown below:
+#        | ERRO Running error: buildir: failed to load package net: could not load export data: no export data for "net"
+        CGO_ENABLED: 0
+        TEST_RESULTS: /tmp/test-results
       run: |
+        mkdir -p $TEST_RESULTS/gotest
+        go get -u github.com/jstemmer/go-junit-report
         make deps
-        # TODO Fix lint call, and all the other 'make' calls following it...
-        #make ci-lint
-        #make lint
-        #make test | go-junit-report > $TEST_RESULTS/gotest/report.xml
-        #make test
+        make ci-lint
+        make test | go-junit-report > $TEST_RESULTS/gotest/report.xml
 
     - name: WriteGoList
       run: go list -json -m all > go.list
