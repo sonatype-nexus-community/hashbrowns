@@ -1,4 +1,4 @@
-name: GHA Go Build
+name: nancy-gh-action
 
 on:
   push:
