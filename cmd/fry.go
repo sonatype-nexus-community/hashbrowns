@@ -22,17 +22,19 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+	"github.com/sonatype-nexus-community/go-sona-types/cyclonedx"
 	"github.com/sonatype-nexus-community/hashbrowns/iq"
 	"github.com/sonatype-nexus-community/hashbrowns/logger"
 	"github.com/sonatype-nexus-community/hashbrowns/parse"
 	"github.com/sonatype-nexus-community/hashbrowns/types"
 
-	"github.com/sonatype-nexus-community/nancy/cyclonedx"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 var log *logrus.Logger
+
+var sbomCreator *cyclonedx.CycloneDX
 
 // fryCmd represents the fry command
 var fryCmd = &cobra.Command{
@@ -61,11 +63,18 @@ This can be used to audit generic environments for matches to known hashes that 
 
 		log = logger.GetLogger("", config.LogLevel)
 
+		sbomCreator = cyclonedx.Default(log)
+
 		log.Info("Running Fry Command")
 
+		sha1s, err := doParseSha1List(&config)
+		if err != nil {
+			panic(err)
+		}
+
 		var exitCode int
-		if exitCode, err = doParseSha1List(&config); err != nil {
-			return
+		if exitCode, err = doCycloneDxAndIQ(sha1s); err != nil {
+			panic(err)
 		}
 
 		if exitCode == 0 {
@@ -99,32 +108,36 @@ func checkRequiredFlags(flags *pflag.FlagSet) {
 	}
 }
 
-func doParseSha1List(config *types.Config) (exitCode int, err error) {
+func doParseSha1List(config *types.Config) (sha1s []cyclonedx.Sha1SBOM, err error) {
 	log.WithField("path", config.Path).Info("Checking for existence of path to sha1 file")
 	if _, err = os.Stat(config.Path); os.IsNotExist(err) {
 		log.WithField("error", err).Error("Path does not exist, returning")
 
-		panic(err)
+		return
 	}
 
 	log.WithField("path", config.Path).Info("Beginning parsing of file into sha1 type")
-	sha1s, err := parse.Sha1File(config.Path)
+	sha1s, err = parse.Sha1File(config.Path)
 	if err != nil {
 		log.WithField("error", err).Error("Error parsing sha1 file into sha1 type")
 
-		panic(err)
+		return
 	}
 	log.WithField("sha1s", sha1s).Debug("Obtained sha1 struct from ParseSha1File")
 
+	return
+}
+
+func doCycloneDxAndIQ(sha1s []cyclonedx.Sha1SBOM) (exitCode int, err error) {
 	log.WithField("sha1s", sha1s).Info("Beginning to obtain SBOM")
-	sbom := cyclonedx.SBOMFromSHA1(sha1s)
+	sbom := sbomCreator.FromSHA1s(sha1s)
 	log.Info("Removing newlines from sbom")
 	sbom = strings.Replace(sbom, "\n", "", -1)
 
 	log.WithField("sbom", sbom).Trace("SBOM obtained")
 
 	log.WithField("sbom", sbom).Info("Beginning to submit SBOM to Nexus IQ Server")
-	res, err := iq.AuditPackages(sbom, config)
+	res, err := iq.AuditPackages(sbom, &config)
 	if err != nil {
 		log.WithField("error", err).Error("Unable to submit SBOM to Nexus IQ Server")
 
@@ -143,10 +156,9 @@ func doParseSha1List(config *types.Config) (exitCode int, err error) {
 		fmt.Println("Wonderbar! No policy violations reported for this audit!")
 		fmt.Println("Report URL: ", res.ReportHTMLURL)
 		return 0, nil
-	} else {
-		log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned a Failure Policy Action")
-		fmt.Println("Hi, Hashbrowns here, you have some policy violations to clean up!")
-		fmt.Println("Report URL: ", res.ReportHTMLURL)
-		return 1, nil
 	}
+	log.WithField("policy_action", res.PolicyAction).Trace("Nexus IQ Server policy evaluation returned a Failure Policy Action")
+	fmt.Println("Hi, Hashbrowns here, you have some policy violations to clean up!")
+	fmt.Println("Report URL: ", res.ReportHTMLURL)
+	return 1, nil
 }
