@@ -1,6 +1,7 @@
 # hashbrowns
 
-[![CircleCI](https://circleci.com/gh/sonatype-nexus-community/hashbrowns.svg?style=svg)](https://circleci.com/gh/sonatype-nexus-community/hashbrowns)
+[![CircleCI](https://circleci.com/gh/sonatype-nexus-community/hashbrowns.svg?style=shield)](https://circleci.com/gh/sonatype-nexus-community/hashbrowns)
+<a href="https://github.com/sonatype-nexus-community/hashbrowns/actions"><img src="https://github.com/sonatype-nexus-community/hashbrowns/workflows/nancy-gh-action/badge.svg" alt="nancy-gh-action"></img></a>
 
 Hashbrowns is a utility for scanning sha1 sums akin to:
 
@@ -137,6 +138,20 @@ At current time you have a one option:
 We care a lot about making the world a safer place, and that's why we created `hashbrowns`. If you as well want to
 speed up the pace of software development by working on this project, jump on in! Before you start work, create
 a new issue, or comment on an existing issue, to let others know you are!
+
+### Release Process
+
+Follow the steps below to release a new version. You need to be part of the `deploy from circle ci` group for this to work.
+
+1. Checkout/pull the latest `main` branch, and create a new tag with the desired semantic version and a helpful note:
+
+       git tag -a v0.0.x -m "Helpful message in tag."
+
+2. Push the tag up:
+
+       git push origin v0.0.x
+
+3. There is no step 3.
 
 ## The Fine Print
 
