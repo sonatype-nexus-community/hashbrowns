@@ -18,6 +18,7 @@ package parse
 import (
 	"path"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,5 +41,8 @@ func TestParseSha1FileBadPath(t *testing.T) {
 	assert.Nil(t, results)
 	assert.NotNil(t, err)
 	typeOfError := reflect.TypeOf(err).String()
-	assert.Equal(t, "*os.PathError", typeOfError)
+	// typeOfError changes with newer golang versions.
+	// as of golang 1.16, will be *fs.PathError
+	// older versions would yield *os.PathError
+	assert.True(t, strings.HasSuffix(typeOfError, "s.PathError"))
 }
