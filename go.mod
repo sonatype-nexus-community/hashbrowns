@@ -17,9 +17,11 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	golang.org/x/sys v0.0.0-20200828150025-8dfe04af21d5 // indirect
 	gopkg.in/ini.v1 v1.60.2 // indirect
 )
 
 // fix vulnerability: CVE-2020-15114 in etcd v3.3.13+incompatible
 replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
+
+// fix vulnerability: CVE-2021-3121 in gogo/protobuf@1.2.1
+replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
