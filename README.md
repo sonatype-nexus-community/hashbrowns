@@ -157,10 +157,14 @@ Follow the steps below to release a new version. You need to be part of the `dep
 
 Remember:
 
-* If you are a Sonatype customer, you may file Sonatype support tickets related to `hashbrowns` support in regard to this project
-* We suggest you file issues here on GitHub as well, so that the community can pitch in
+It is worth noting that this is **NOT SUPPORTED** by Sonatype, and is a contribution of ours to the open source
+community (read: you!)
 
-Have fun creating and using `hashbrowns`, we are glad to have you here!
+* Use this contribution at the risk tolerance that you have
+* Do NOT file Sonatype support tickets related to `ossindex-lib`
+* DO file issues here on GitHub, so that the community can pitch in
+
+Phew, that was easier than I thought. Last but not least of all - have fun!
 
 ## Getting help
 
